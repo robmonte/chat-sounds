@@ -3,12 +3,9 @@ package com.chatsounds;
 import com.google.inject.Provides;
 import jaco.mp3.player.MP3Player;
 import java.io.File;
-import java.io.IOException;
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.io.FileOutputStream;
+import java.io.InputStream;
+import java.io.OutputStream;
 import javax.inject.Inject;
 import javax.swing.SwingUtilities;
 import lombok.extern.slf4j.Slf4j;
@@ -44,7 +41,6 @@ public class ChatSoundsPlugin extends Plugin
 		CS_CLAN,
 		CS_CLAN_BROADCAST
 	};
-	private final URL SOUND = this.getClass().getResource("/cs_default.mp3");
 
 	@Inject
 	private Client client;
@@ -103,22 +99,24 @@ public class ChatSoundsPlugin extends Plugin
 		{
 			try
 			{
-				Path src = Paths.get(SOUND.toURI());
-				Path dest = Paths.get(f.getPath());
-				Files.copy(src, dest);
-			} catch (IOException e)
-			{
-				log.debug("ChatSoundsPlugin - Unhandled IO: " + f);
-			} catch (URISyntaxException u)
-			{
-				log.debug("ChatSoundsPlugin - Unhandled URISyntax: " + f);
+				InputStream stream = ChatSoundsPlugin.class.getClassLoader().getResourceAsStream("cs_default.mp3");
+				OutputStream out = new FileOutputStream(f);
+				byte[] buffer = new byte[8 * 1024];
+				int bytesRead;
+				while ((bytesRead = stream.read(buffer)) != -1) {
+					out.write(buffer, 0, bytesRead);
+				}
+				out.close();
+				stream.close();
+			}  catch (Exception e) {
+				log.info("ChatSoundsPlugin - " + e + ": " + f);
 			}
 		}
 	}
 
 	private void playSound(ChatSoundsMode mode, File f)
 	{
-		if (mode == ChatSoundsMode.OFF)
+		if (mode == ChatSoundsMode.OFF || !f.exists())
 		{
 			return;
 		}
@@ -127,16 +125,12 @@ public class ChatSoundsPlugin extends Plugin
 		SwingUtilities.invokeLater(() ->
 			{
 				MP3Player mp3Player = new MP3Player(CS_DEFAULT);
-				if (mode == ChatSoundsMode.DEFAULT)
-				{
-					mp3Player.setVolume(config.volume());
-					mp3Player.play();
-				} else if (mode == ChatSoundsMode.CUSTOM)
+				if (mode == ChatSoundsMode.CUSTOM)
 				{
 					mp3Player = new MP3Player(f);
-					mp3Player.setVolume(config.volume());
-					mp3Player.play();
 				}
+				mp3Player.setVolume(config.volume());
+				mp3Player.play();
 			});
 	}
 
