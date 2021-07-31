@@ -26,6 +26,7 @@ import net.runelite.client.plugins.PluginDescriptor;
 )
 public class ChatSoundsPlugin extends Plugin
 {
+	private static final String CS_CLAN_MSG = "To talk in your clan's channel, start each line of chat with // or /c.";
 	private static final File CS_DIR = new File(RuneLite.RUNELITE_DIR.getPath() + File.separator + "chat-sounds");
 	private static final File CS_DEFAULT = new File(CS_DIR, "cs_default.mp3");
 	private static final File CS_PUBLIC = new File(CS_DIR, "cs_public.mp3");
@@ -83,7 +84,9 @@ public class ChatSoundsPlugin extends Plugin
 				playSound(config.clanChat(), CS_CLAN);
 				break;
 			case CLAN_MESSAGE:
-				playSound(config.clanBroadcast(), CS_CLAN_BROADCAST);
+				if (!event.getMessage().equals(CS_CLAN_MSG)) {
+					playSound(config.clanBroadcast(), CS_CLAN_BROADCAST);
+				}
 				break;
 		}
 	}
@@ -99,6 +102,9 @@ public class ChatSoundsPlugin extends Plugin
 		{
 			try
 			{
+				if (f.exists()) {
+					continue;
+				}
 				InputStream stream = ChatSoundsPlugin.class.getClassLoader().getResourceAsStream("cs_default.mp3");
 				OutputStream out = new FileOutputStream(f);
 				byte[] buffer = new byte[8 * 1024];
