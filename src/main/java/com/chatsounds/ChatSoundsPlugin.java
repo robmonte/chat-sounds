@@ -59,9 +59,10 @@ public class ChatSoundsPlugin extends Plugin
 	public void onChatMessage(ChatMessage event)
 	{
 		Player player = client.getLocalPlayer();
+		String eventName = removePrefixedImageFromName(event.getName());
 		if (player == null ||
 			client.getGameState() != GameState.LOGGED_IN ||
-			event.getName().equals(player.getName()))
+			eventName.equals(player.getName()))
 		{
 			return;
 		}
@@ -89,6 +90,17 @@ public class ChatSoundsPlugin extends Plugin
 				}
 				break;
 		}
+	}
+
+	// Special accounts types have an icon prepended onto the chat event's name in certain chat channels.
+	// i.e. "<img=99>Username"
+	private String removePrefixedImageFromName(String text) {
+		boolean startsWithImgMarkup = text.startsWith("<img") && text.contains(">");
+		boolean hasTextAfterMarkup = text.indexOf(">") != text.length() - 1;
+		if (startsWithImgMarkup && hasTextAfterMarkup) {
+			text = text.substring(text.indexOf(">") + 1);
+		}
+		return text;
 	}
 
 	private void initSoundFiles()
