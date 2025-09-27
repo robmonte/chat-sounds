@@ -1,9 +1,10 @@
 package com.chatsounds;
 
 import com.google.inject.Provides;
-import jaco.mp3.player.MP3Player;
+//import jaco.mp3.player.MP3Player;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.List;
@@ -11,7 +12,9 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.inject.Inject;
-import javax.swing.SwingUtilities;
+import javax.sound.sampled.LineUnavailableException;
+import javax.sound.sampled.UnsupportedAudioFileException;
+//import javax.swing.SwingUtilities;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.ChatMessageType;
 import net.runelite.api.Client;
@@ -19,6 +22,7 @@ import net.runelite.api.GameState;
 import net.runelite.api.Player;
 import net.runelite.api.events.ChatMessage;
 import net.runelite.client.RuneLite;
+import net.runelite.client.audio.AudioPlayer;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.events.ConfigChanged;
@@ -37,18 +41,18 @@ public class ChatSoundsPlugin extends Plugin
 	private static final String CS_CLAN_GUEST_MSG = "Attempting to reconnect to guest channel automatically...";
 	private static final Pattern CS_CLAN_GUEST_PATTERN = Pattern.compile("You are now a guest of [0-9A-Za-z ]*.<br>To talk, start each line of chat with \\/\\/\\/ or \\/gc.");
 	private static final File CS_DIR = new File(RuneLite.RUNELITE_DIR.getPath() + File.separator + "chat-sounds");
-	private static final File CS_DEFAULT = new File(CS_DIR, "cs_default.mp3");
-	private static final File CS_PUBLIC = new File(CS_DIR, "cs_public.mp3");
-	private static final File CS_PRIVATE = new File(CS_DIR, "cs_private.mp3");
-	private static final File CS_CHAT_CHANNEL = new File(CS_DIR,"cs_chat_channel.mp3");
-	private static final File CS_CLAN = new File(CS_DIR, "cs_clan.mp3");
-	private static final File CS_CLAN_BROADCAST = new File(CS_DIR, "cs_clan_broadcast.mp3");
-	private static final File CS_GIM = new File(CS_DIR, "cs_gim.mp3");
-	private static final File CS_GIM_BROADCAST = new File(CS_DIR, "cs_gim_broadcast.mp3");
-	private static final File CS_CLAN_GUEST = new File(CS_DIR, "cs_clan_guest.mp3");
-	private static final File CS_CLAN_GUEST_SYSTEM = new File(CS_DIR, "cs_clan_guest_system.mp3");
-	private static final File CS_TRADE_REQUEST = new File(CS_DIR, "cs_trade_req.mp3");
-	private static final File CS_DUEL_REQUEST = new File(CS_DIR, "cs_duel_req.mp3");
+	private static final File CS_DEFAULT = new File(CS_DIR, "cs_default.wav");
+	private static final File CS_PUBLIC = new File(CS_DIR, "cs_public.wav");
+	private static final File CS_PRIVATE = new File(CS_DIR, "cs_private.wav");
+	private static final File CS_CHAT_CHANNEL = new File(CS_DIR,"cs_chat_channel.wav");
+	private static final File CS_CLAN = new File(CS_DIR, "cs_clan.wav");
+	private static final File CS_CLAN_BROADCAST = new File(CS_DIR, "cs_clan_broadcast.wav");
+	private static final File CS_GIM = new File(CS_DIR, "cs_gim.wav");
+	private static final File CS_GIM_BROADCAST = new File(CS_DIR, "cs_gim_broadcast.wav");
+	private static final File CS_CLAN_GUEST = new File(CS_DIR, "cs_clan_guest.wav");
+	private static final File CS_CLAN_GUEST_SYSTEM = new File(CS_DIR, "cs_clan_guest_system.wav");
+	private static final File CS_TRADE_REQUEST = new File(CS_DIR, "cs_trade_req.wav");
+	private static final File CS_DUEL_REQUEST = new File(CS_DIR, "cs_duel_req.wav");
 	private static final File[] CS_FILES = new File[]{
 			CS_DEFAULT,
 			CS_PUBLIC,
@@ -63,6 +67,7 @@ public class ChatSoundsPlugin extends Plugin
 			CS_TRADE_REQUEST,
 			CS_DUEL_REQUEST
 	};
+	private final AudioPlayer audioPlayer = new AudioPlayer();
 
 	private List<String> ignoredPlayers = new CopyOnWriteArrayList<>();
 
@@ -172,7 +177,7 @@ public class ChatSoundsPlugin extends Plugin
 				if (f.exists()) {
 					continue;
 				}
-				InputStream stream = ChatSoundsPlugin.class.getClassLoader().getResourceAsStream("cs_default.mp3");
+				InputStream stream = ChatSoundsPlugin.class.getClassLoader().getResourceAsStream("cs_default.wav");
 				OutputStream out = new FileOutputStream(f);
 				byte[] buffer = new byte[8 * 1024];
 				int bytesRead;
@@ -187,6 +192,7 @@ public class ChatSoundsPlugin extends Plugin
 		}
 	}
 
+	/*
 	private void playSound(ChatSoundsMode mode, File f)
 	{
 		if (mode == ChatSoundsMode.OFF || !f.exists())
@@ -205,6 +211,30 @@ public class ChatSoundsPlugin extends Plugin
 				mp3Player.setVolume(config.volume());
 				mp3Player.play();
 			});
+	}
+	 */
+
+	private void playSound(ChatSoundsMode mode, File f)
+	{
+		if (mode == ChatSoundsMode.OFF || !f.exists())
+		{
+			return;
+		}
+
+		try
+		{
+			f = mode.equals(ChatSoundsMode.DEFAULT) ? CS_DEFAULT : f;
+			audioPlayer.play(f, linearTodB(config.volume()));
+		}
+		catch (LineUnavailableException | UnsupportedAudioFileException | IOException e)
+		{
+			log.warn("ChatSoundsPlugin::playSound() error!", e);
+		}
+	}
+
+	private float linearTodB(int linearVolume)
+	{
+		return 20.0f * (float) Math.log10(linearVolume/100.0f);
 	}
 
 	private void updateLists()
