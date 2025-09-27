@@ -6,6 +6,10 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import javax.inject.Inject;
 import javax.swing.SwingUtilities;
 import lombok.extern.slf4j.Slf4j;
@@ -17,8 +21,10 @@ import net.runelite.api.events.ChatMessage;
 import net.runelite.client.RuneLite;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
+import net.runelite.client.util.Text;
 
 @Slf4j
 @PluginDescriptor(
@@ -27,6 +33,9 @@ import net.runelite.client.plugins.PluginDescriptor;
 public class ChatSoundsPlugin extends Plugin
 {
 	private static final String CS_CLAN_MSG = "To talk in your clan's channel, start each line of chat with // or /c.";
+	private static final String CS_GIM_MSG = "To talk in your Ironman Group's channel, start each line of chat with //// or /g.";
+	private static final String CS_CLAN_GUEST_MSG = "Attempting to reconnect to guest channel automatically...";
+	private static final Pattern CS_CLAN_GUEST_PATTERN = Pattern.compile("You are now a guest of [0-9A-Za-z ]*.<br>To talk, start each line of chat with \\/\\/\\/ or \\/gc.");
 	private static final File CS_DIR = new File(RuneLite.RUNELITE_DIR.getPath() + File.separator + "chat-sounds");
 	private static final File CS_DEFAULT = new File(CS_DIR, "cs_default.mp3");
 	private static final File CS_PUBLIC = new File(CS_DIR, "cs_public.mp3");
@@ -34,14 +43,28 @@ public class ChatSoundsPlugin extends Plugin
 	private static final File CS_CHAT_CHANNEL = new File(CS_DIR,"cs_chat_channel.mp3");
 	private static final File CS_CLAN = new File(CS_DIR, "cs_clan.mp3");
 	private static final File CS_CLAN_BROADCAST = new File(CS_DIR, "cs_clan_broadcast.mp3");
+	private static final File CS_GIM = new File(CS_DIR, "cs_gim.mp3");
+	private static final File CS_GIM_BROADCAST = new File(CS_DIR, "cs_gim_broadcast.mp3");
+	private static final File CS_CLAN_GUEST = new File(CS_DIR, "cs_clan_guest.mp3");
+	private static final File CS_CLAN_GUEST_SYSTEM = new File(CS_DIR, "cs_clan_guest_system.mp3");
+	private static final File CS_TRADE_REQUEST = new File(CS_DIR, "cs_trade_req.mp3");
+	private static final File CS_DUEL_REQUEST = new File(CS_DIR, "cs_duel_req.mp3");
 	private static final File[] CS_FILES = new File[]{
-		CS_DEFAULT,
-		CS_PUBLIC,
-		CS_PRIVATE,
-		CS_CHAT_CHANNEL,
-		CS_CLAN,
-		CS_CLAN_BROADCAST
+			CS_DEFAULT,
+			CS_PUBLIC,
+			CS_PRIVATE,
+			CS_CHAT_CHANNEL,
+			CS_CLAN,
+			CS_CLAN_BROADCAST,
+			CS_GIM,
+			CS_GIM_BROADCAST,
+			CS_CLAN_GUEST,
+			CS_CLAN_GUEST_SYSTEM,
+			CS_TRADE_REQUEST,
+			CS_DUEL_REQUEST
 	};
+
+	private List<String> ignoredPlayers = new CopyOnWriteArrayList<>();
 
 	@Inject
 	private Client client;
@@ -53,21 +76,30 @@ public class ChatSoundsPlugin extends Plugin
 	protected void startUp()
 	{
 		initSoundFiles();
+		updateLists();
+	}
+
+	@Override
+	protected void shutDown()
+	{
+		ignoredPlayers = null;
 	}
 
 	@Subscribe
-	public void onChatMessage(ChatMessage event)
+	public void onChatMessage(ChatMessage chatMessage)
 	{
 		Player player = client.getLocalPlayer();
-		String eventName = removePrefixedImageFromName(event.getName());
+		String cleanName = Text.sanitize(chatMessage.getName());
 		if (player == null ||
 			client.getGameState() != GameState.LOGGED_IN ||
-			eventName.equals(player.getName()))
+			cleanName.equals(player.getName()) ||
+			ignoredPlayers.contains(cleanName))
 		{
 			return;
 		}
 
-		ChatMessageType type = event.getType();
+		ChatMessageType type = chatMessage.getType();
+		String msg = chatMessage.getMessage();
 		switch (type)
 		{
 			case MODCHAT:
@@ -85,22 +117,45 @@ public class ChatSoundsPlugin extends Plugin
 				playSound(config.clanChat(), CS_CLAN);
 				break;
 			case CLAN_MESSAGE:
-				if (!event.getMessage().equals(CS_CLAN_MSG)) {
+				if (!msg.equals(CS_CLAN_MSG)) {
 					playSound(config.clanBroadcast(), CS_CLAN_BROADCAST);
 				}
+				break;
+			case CLAN_GIM_CHAT:
+				playSound(config.gimChat(), CS_GIM);
+				break;
+			case CLAN_GIM_MESSAGE:
+				if (!msg.equals(CS_GIM_MSG)) {
+					playSound(config.gimBroadcast(), CS_CLAN_BROADCAST);
+				}
+				break;
+			case CLAN_GUEST_CHAT:
+				playSound(config.clanGuestChat(), CS_CLAN_GUEST);
+				break;
+			case CLAN_GUEST_MESSAGE:
+				Matcher m = CS_CLAN_GUEST_PATTERN.matcher(msg);
+				if (m.find() || msg.equals(CS_CLAN_GUEST_MSG))
+				{
+					break;
+				}
+				playSound(config.clanGuestSystemMessage(), CS_CLAN_GUEST_SYSTEM);
+				break;
+			case TRADEREQ:
+				playSound(config.tradeRequest(), CS_TRADE_REQUEST);
+				break;
+			case CHALREQ_TRADE:
+				playSound(config.duelRequest(), CS_DUEL_REQUEST);
 				break;
 		}
 	}
 
-	// Special accounts types have an icon prepended onto the chat event's name in certain chat channels.
-	// i.e. "<img=99>Username"
-	private String removePrefixedImageFromName(String text) {
-		boolean startsWithImgMarkup = text.startsWith("<img") && text.contains(">");
-		boolean hasTextAfterMarkup = text.indexOf(">") != text.length() - 1;
-		if (startsWithImgMarkup && hasTextAfterMarkup) {
-			text = text.substring(text.indexOf(">") + 1);
+	@Subscribe
+	public void onConfigChanged(ConfigChanged configChanged)
+	{
+		if (configChanged.getGroup().equals(ChatSoundsConfig.GROUP) && configChanged.getKey().equals(ChatSoundsConfig.PLAYER_IGNORE_LIST))
+		{
+			updateLists();
 		}
-		return text;
 	}
 
 	private void initSoundFiles()
@@ -150,6 +205,11 @@ public class ChatSoundsPlugin extends Plugin
 				mp3Player.setVolume(config.volume());
 				mp3Player.play();
 			});
+	}
+
+	private void updateLists()
+	{
+		ignoredPlayers = Text.fromCSV(config.playerIgnoreList());
 	}
 
 	@Provides
