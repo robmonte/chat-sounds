@@ -1,14 +1,18 @@
 package com.chatsounds;
 
 import com.google.inject.Provides;
-import jaco.mp3.player.MP3Player;
+//import jaco.mp3.player.MP3Player;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import javax.inject.Inject;
-import javax.swing.SwingUtilities;
+import javax.sound.sampled.LineUnavailableException;
+import javax.sound.sampled.UnsupportedAudioFileException;
+//import javax.swing.SwingUtilities;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.ChatMessageType;
 import net.runelite.api.Client;
@@ -16,6 +20,7 @@ import net.runelite.api.GameState;
 import net.runelite.api.Player;
 import net.runelite.api.events.ChatMessage;
 import net.runelite.client.RuneLite;
+import net.runelite.client.audio.AudioPlayer;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.plugins.Plugin;
@@ -28,38 +33,30 @@ import net.runelite.client.util.Text;
 )
 public class ChatSoundsPlugin extends Plugin
 {
-	private static final String DEFAULT_FILE_NAME = "cs_default.mp3";
-	private static final String PUBLIC_FILE_NAME = "cs_public.mp3";
-	private static final String PRIVATE_FILE_NAME = "cs_private.mp3";
-	private static final String CHAT_CHANNEL_FILE_NAME = "cs_chat_channel.mp3";
-	private static final String CLAN_FILE_NAME = "cs_clan.mp3";
-	private static final String CLAN_BROADCAST_FILE_NAME = "cs_clan_broadcast.mp3";
-	private static final String CLAN_GUEST_FILE_NAME = "cs_clan_guest.mp3";
-	private static final String CLAN_GUEST_BROADCAST_FILE_NAME = "cs_clan_guest_broadcast.mp3";
-	private static final String GIM_FILE_NAME = "cs_gim.mp3";
-	private static final String GIM_BROADCAST_FILE_NAME = "cs_gim_broadcast.mp3";
-
-	private static final String HAS_JOINED = " has joined.";
-	private static final String HAS_LEFT = " has left.";
+	private static final String HAS_JOINED = " has joined.".toLowerCase();;
+	private static final String HAS_LEFT = " has left.".toLowerCase();;
 	private static final String CS_CHAT_CHANNEL_MSG_1 = "Attempting to join chat-channel...".toLowerCase();
 	private static final String CS_CHAT_CHANNEL_MSG_2 = "Now talking in chat-channel ".toLowerCase();
 	private static final String CS_CHAT_CHANNEL_MSG_3 = "To talk, start each line of chat with the / symbol.".toLowerCase();
 	private static final String CS_CLAN_MSG = "To talk in your clan's channel, start each line of chat with // or /c.".toLowerCase();
 	private static final String CS_CLAN_GUEST_MSG_1 = "You are now a guest of ".toLowerCase();
 	private static final String CS_CLAN_GUEST_MSG_2 = "To talk, start each line of chat with /// or /gc.".toLowerCase();
+	private static final String CS_CLAN_GUEST_MSG_3 = "Attempting to reconnect to guest channel automatically...";
 	private static final String CS_GIM_MSG = "To talk in your Ironman Group's channel, start each line of chat with //// or /g.".toLowerCase();
 
 	private static final File CS_DIR = new File(RuneLite.RUNELITE_DIR.getPath() + File.separator + "chat-sounds");
-	private static final File CS_DEFAULT = new File(CS_DIR, DEFAULT_FILE_NAME);
-	private static final File CS_PUBLIC = new File(CS_DIR, PUBLIC_FILE_NAME);
-	private static final File CS_PRIVATE = new File(CS_DIR, PRIVATE_FILE_NAME);
-	private static final File CS_CHAT_CHANNEL = new File(CS_DIR, CHAT_CHANNEL_FILE_NAME);
-	private static final File CS_CLAN = new File(CS_DIR, CLAN_FILE_NAME);
-	private static final File CS_CLAN_BROADCAST = new File(CS_DIR, CLAN_BROADCAST_FILE_NAME);
-	private static final File CS_CLAN_GUEST = new File(CS_DIR, CLAN_GUEST_FILE_NAME);
-	private static final File CS_CLAN_GUEST_BROADCAST = new File(CS_DIR, CLAN_GUEST_BROADCAST_FILE_NAME);
-	private static final File CS_GIM = new File(CS_DIR, GIM_FILE_NAME);
-	private static final File CS_GIM_BROADCAST = new File(CS_DIR, GIM_BROADCAST_FILE_NAME);
+	private static final File CS_DEFAULT = new File(CS_DIR, "cs_default.wav");
+	private static final File CS_PUBLIC = new File(CS_DIR, "cs_public.wav");
+	private static final File CS_PRIVATE = new File(CS_DIR, "cs_private.wav");
+	private static final File CS_CHAT_CHANNEL = new File(CS_DIR,"cs_chat_channel.wav");
+	private static final File CS_CLAN = new File(CS_DIR, "cs_clan.wav");
+	private static final File CS_CLAN_BROADCAST = new File(CS_DIR, "cs_clan_broadcast.wav");
+	private static final File CS_CLAN_GUEST = new File(CS_DIR, "cs_clan_guest.wav");
+	private static final File CS_CLAN_GUEST_BROADCAST = new File(CS_DIR, "cs_clan_guest_broadcast.wav");
+	private static final File CS_GIM = new File(CS_DIR, "cs_gim.wav");
+	private static final File CS_GIM_BROADCAST = new File(CS_DIR, "cs_gim_broadcast.wav");
+	private static final File CS_TRADE_REQUEST = new File(CS_DIR, "cs_trade_req.wav");
+	private static final File CS_DUEL_REQUEST = new File(CS_DIR, "cs_duel_req.wav");
 	private static final File[] CS_FILES = new File[]{
 		CS_DEFAULT,
 		CS_PUBLIC,
@@ -70,8 +67,20 @@ public class ChatSoundsPlugin extends Plugin
 		CS_CLAN_GUEST,
 		CS_CLAN_GUEST_BROADCAST,
 		CS_GIM,
-		CS_GIM_BROADCAST
+		CS_GIM_BROADCAST,
+		CS_TRADE_REQUEST,
+		CS_DUEL_REQUEST
 	};
+
+	private final AudioPlayer audioPlayer = new AudioPlayer();
+	private List<String> publicIgnored = new CopyOnWriteArrayList<>();
+	private List<String> privateIgnored = new CopyOnWriteArrayList<>();
+	private List<String> chatChannelIgnored = new CopyOnWriteArrayList<>();
+	private List<String> clanIgnored = new CopyOnWriteArrayList<>();
+	private List<String> guestClanIgnored = new CopyOnWriteArrayList<>();
+	private List<String> gimIgnored = new CopyOnWriteArrayList<>();
+	private List<String> tradeIgnored = new CopyOnWriteArrayList<>();
+	private List<String> duelIgnored = new CopyOnWriteArrayList<>();
 
 	@Inject
 	private Client client;
@@ -83,25 +92,41 @@ public class ChatSoundsPlugin extends Plugin
 	protected void startUp()
 	{
 		initSoundFiles();
+		updateLists();
 	}
 
+	@Override
+	protected void shutDown()
+	{
+		publicIgnored = null;
+		privateIgnored = null;
+		chatChannelIgnored = null;
+		clanIgnored = null;
+		guestClanIgnored = null;
+		gimIgnored = null;
+		tradeIgnored = null;
+		duelIgnored = null;
+	}
+
+
 	@Subscribe
-	public void onChatMessage(ChatMessage event)
+	public void onChatMessage(ChatMessage chatMessage)
 	{
 		Player player = client.getLocalPlayer();
 		String playerName = player.getName() != null ? player.getName() : "";
-		String eventName = Text.sanitize(event.getName());
-		if (player == null || client.getGameState() != GameState.LOGGED_IN ||
-				eventName.equalsIgnoreCase(Text.sanitize(playerName))) {
+		String cleanName = Text.sanitize(chatMessage.getName());
+		if (player == null ||
+				client.getGameState() != GameState.LOGGED_IN ||
+				cleanName.equalsIgnoreCase(Text.sanitize(playerName))) {
 			return;
 		}
 
-		String msg = Text.standardize(event.getMessage());
-		ChatMessageType type = event.getType();
+		ChatMessageType type = chatMessage.getType();
+		String msg = Text.standardize(chatMessage.getMessage());
 		switch (type) {
 			case MODCHAT:
 			case PUBLICCHAT:
-				if (shouldAlertOnPlayer(config.publicIgnorePlayersList(), eventName)) {
+				if (shouldIgnorePlayer(publicIgnored, cleanName)) {
 					return;
 				}
 				playSound(config.publicChat(), CS_PUBLIC, config.publicVolume());
@@ -109,14 +134,14 @@ public class ChatSoundsPlugin extends Plugin
 
 			case MODPRIVATECHAT:
 			case PRIVATECHAT:
-				if (shouldAlertOnPlayer(config.privateIgnorePlayersList(), eventName)) {
+				if (shouldIgnorePlayer(privateIgnored, cleanName)) {
 					return;
 				}
 				playSound(config.privateChat(), CS_PRIVATE, config.privateVolume());
 				break;
 
 			case FRIENDSCHAT:
-				if (shouldAlertOnPlayer(config.chatChannelIgnorePlayersList(), eventName)) {
+				if (shouldIgnorePlayer(chatChannelIgnored, cleanName)) {
 					return;
 				}
 				playSound(config.chatChannel(), CS_CHAT_CHANNEL, config.chatChannelVolume());
@@ -131,7 +156,7 @@ public class ChatSoundsPlugin extends Plugin
 				break;
 
 			case CLAN_CHAT:
-				if (shouldAlertOnPlayer(config.clanIgnorePlayersList(), eventName)) {
+				if (shouldIgnorePlayer(clanIgnored, cleanName)) {
 					return;
 				}
 				playSound(config.clanChat(), CS_CLAN, config.clanVolume());
@@ -144,7 +169,7 @@ public class ChatSoundsPlugin extends Plugin
 				break;
 
 			case CLAN_GUEST_CHAT:
-				if (shouldAlertOnPlayer(config.guestClanIgnorePlayersList(), eventName)) {
+				if (shouldIgnorePlayer(guestClanIgnored, cleanName)) {
 					return;
 				}
 				playSound(config.guestClanChat(), CS_CLAN_GUEST, config.guestClanVolume());
@@ -152,13 +177,14 @@ public class ChatSoundsPlugin extends Plugin
 
 			case CLAN_GUEST_MESSAGE:
 				if (shouldAlertOnJoinOrLeft(msg, config.guestClanIgnoreJoinLeave()) &&
-						!msg.startsWith(CS_CLAN_GUEST_MSG_1) && !msg.endsWith(CS_CLAN_GUEST_MSG_2)) {
+						!msg.startsWith(CS_CLAN_GUEST_MSG_1) && !msg.endsWith(CS_CLAN_GUEST_MSG_2) &&
+						!msg.equals(CS_CLAN_GUEST_MSG_3)) {
 					playSound(config.guestClanBroadcast(), CS_CLAN_GUEST_BROADCAST, config.guestClanVolume());
 				}
 				break;
 
 			case CLAN_GIM_CHAT:
-				if (shouldAlertOnPlayer(config.groupIronIgnorePlayersList(), eventName)) {
+				if (shouldIgnorePlayer(gimIgnored, cleanName)) {
 					return;
 				}
 				playSound(config.gimChat(), CS_GIM, config.groupIronVolume());
@@ -169,14 +195,26 @@ public class ChatSoundsPlugin extends Plugin
 					playSound(config.gimBroadcast(), CS_GIM_BROADCAST, config.groupIronVolume());
 				}
 				break;
+
+			case TRADEREQ:
+				if (shouldIgnorePlayer(tradeIgnored, cleanName)) {
+					return;
+				}
+				playSound(config.tradeRequest(), CS_TRADE_REQUEST, config.tradeVolume());
+				break;
+
+			case CHALREQ_TRADE:
+				if (shouldIgnorePlayer(duelIgnored, cleanName)) {
+					return;
+				}
+				playSound(config.duelRequest(), CS_DUEL_REQUEST, config.duelVolume());
+				break;
 		}
 	}
 
 	// Returns true if the message is from an ignored player in the chat's type.
-	private boolean shouldAlertOnPlayer(String ignoreList, String eventName) {
-		List<String> ignorePlayersList = Text.fromCSV(ignoreList.trim().toLowerCase());
-
-        return ignorePlayersList.contains(eventName.toLowerCase());
+	private boolean shouldIgnorePlayer(List<String> ignoreList, String eventName) {
+        return ignoreList.contains(eventName.toLowerCase());
     }
 
 	// Returns false if it is not a "join" or "left" message. If it is one, returns true if ignore is
@@ -193,10 +231,7 @@ public class ChatSoundsPlugin extends Plugin
 	{
 		if (!CS_DIR.exists())
 		{
-			boolean dirsResult = CS_DIR.mkdirs();
-			if (!dirsResult) {
-				log.info("Failed to create directory " + CS_DIR);
-			}
+			CS_DIR.mkdirs();
 		}
 
 		for (File f : CS_FILES)
@@ -206,7 +241,7 @@ public class ChatSoundsPlugin extends Plugin
 				if (f.exists()) {
 					continue;
 				}
-				InputStream stream = ChatSoundsPlugin.class.getClassLoader().getResourceAsStream(DEFAULT_FILE_NAME);
+				InputStream stream = ChatSoundsPlugin.class.getClassLoader().getResourceAsStream("cs_default.wav");
 				OutputStream out = new FileOutputStream(f);
 				byte[] buffer = new byte[8 * 1024];
 				int bytesRead;
@@ -228,17 +263,32 @@ public class ChatSoundsPlugin extends Plugin
 			return;
 		}
 
-		//this is invoked later on the Event Dispatch Thread due to MP3Player's initialization
-		SwingUtilities.invokeLater(() ->
-			{
-				MP3Player mp3Player = new MP3Player(CS_DEFAULT);
-				if (mode == ChatSoundsMode.CUSTOM)
-				{
-					mp3Player = new MP3Player(f);
-				}
-				mp3Player.setVolume(volume);
-				mp3Player.play();
-			});
+		try
+		{
+			f = mode.equals(ChatSoundsMode.DEFAULT) ? CS_DEFAULT : f;
+			audioPlayer.play(f, linearTodB(volume));
+		}
+		catch (LineUnavailableException | UnsupportedAudioFileException | IOException e)
+		{
+			log.warn("ChatSoundsPlugin::playSound() error!", e);
+		}
+	}
+
+	private float linearTodB(int linearVolume)
+	{
+		return 20.0f * (float) Math.log10(linearVolume/100.0f);
+	}
+
+	private void updateLists()
+	{
+		publicIgnored = Text.fromCSV(config.publicIgnorePlayersList());
+		privateIgnored = Text.fromCSV(config.privateIgnorePlayersList());
+		chatChannelIgnored = Text.fromCSV(config.chatChannelIgnorePlayersList());
+		clanIgnored = Text.fromCSV(config.clanIgnorePlayersList());
+		guestClanIgnored = Text.fromCSV(config.guestClanIgnorePlayersList());
+		gimIgnored = Text.fromCSV(config.groupIronIgnorePlayersList());
+		tradeIgnored = Text.fromCSV(config.tradeIgnorePlayersList());
+		duelIgnored = Text.fromCSV(config.duelIgnorePlayersList());
 	}
 
 	@Provides

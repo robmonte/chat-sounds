@@ -14,7 +14,7 @@ public interface ChatSoundsConfig extends Config
 	* PUBLIC CHAT *
  	**************/
 	@ConfigSection(
-			name = "Public chat",
+			name = "Public Chat",
 			description = "Settings for public chat.",
 			position = 0
 	)
@@ -66,7 +66,7 @@ public interface ChatSoundsConfig extends Config
 	* PRIVATE CHAT *
 	****************/
 	@ConfigSection(
-			name = "Private chat",
+			name = "Private Chat",
 			description = "Settings for private chat.",
 			position = 5
 	)
@@ -182,7 +182,7 @@ public interface ChatSoundsConfig extends Config
  	* CLAN CHATS *
  	*************/
 	@ConfigSection(
-			name = "Clan chat",
+			name = "Clan Chat",
 			description = "Settings for clan chats.",
 			position = 15
 	)
@@ -258,7 +258,7 @@ public interface ChatSoundsConfig extends Config
  	* GUEST CLANS *
 	**************/
 	@ConfigSection(
-			name = "Guest clan chat",
+			name = "Guest Clan Chat",
 			description = "Settings for guest clan chats.",
 			position = 21
 	)
@@ -334,7 +334,7 @@ public interface ChatSoundsConfig extends Config
  	* GROUP IRONMAN *
 	****************/
 	@ConfigSection(
-			name = "Group ironman chat",
+			name = "Group Ironman Chat",
 			description = "Settings for group ironman chats.",
 			position = 26
 	)
@@ -390,6 +390,110 @@ public interface ChatSoundsConfig extends Config
 			section = groupList
 	)
 	default String groupIronIgnorePlayersList()
+	{
+		return "";
+	}
+
+	/*********
+	* TRADES *
+	*********/
+	@ConfigSection(
+			name = "Trade Requests",
+			description = "Settings for trade requests.",
+			position = 32
+	)
+	String tradeList = "tradeList";
+
+	@ConfigItem(
+			keyName = "tradeRequest",
+			name = "Trade Request",
+			description = "The sound effect to use when receiving a trade request.",
+			position = 33,
+			section = tradeList
+	)
+	default ChatSoundsMode tradeRequest()
+	{
+		return ChatSoundsMode.OFF;
+	}
+
+	@Range(
+			max = 100
+	)
+	@Units(
+			value = "%"
+	)
+	@ConfigItem(
+			keyName = "tradeVolume",
+			name = "Trade Volume",
+			description = "Sets the volume of the chat message sound effect.",
+			position = 34,
+			section = tradeList
+	)
+	default int tradeVolume()
+	{
+		return 100;
+	}
+
+	@ConfigItem(
+			keyName = "tradeIgnorePlayers",
+			name = "Ignore player names",
+			description = "A comma-separated list of player names to never play a sound for.",
+			position = 35,
+			section = tradeList
+	)
+	default String tradeIgnorePlayersList()
+	{
+		return "";
+	}
+
+	/********
+	* DUELS *
+	********/
+	@ConfigSection(
+			name = "Duel Requests",
+			description = "Settings for duel requests.",
+			position = 36
+	)
+	String duelList = "duelList";
+
+	@ConfigItem(
+			keyName = "duelRequest",
+			name = "Duel Request",
+			description = "The sound effect to use when receiving a duel request.",
+			position = 37,
+			section = duelList
+	)
+	default ChatSoundsMode duelRequest()
+	{
+		return ChatSoundsMode.OFF;
+	}
+
+	@Range(
+			max = 100
+	)
+	@Units(
+			value = "%"
+	)
+	@ConfigItem(
+			keyName = "duelVolume",
+			name = "Duel Volume",
+			description = "Sets the volume of the chat message sound effect.",
+			position = 38,
+			section = duelList
+	)
+	default int duelVolume()
+	{
+		return 100;
+	}
+
+	@ConfigItem(
+			keyName = "duelIgnorePlayers",
+			name = "Ignore player names",
+			description = "A comma-separated list of player names to never play a sound for.",
+			position = 39,
+			section = duelList
+	)
+	default String duelIgnorePlayersList()
 	{
 		return "";
 	}
