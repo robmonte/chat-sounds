@@ -136,6 +136,18 @@ public interface ChatSoundsConfig extends Config
 		return ChatSoundsMode.OFF;
 	}
 
+	@ConfigItem(
+			keyName = "chatChannelBroadcast",
+			name = "Chat-channel Broadcast",
+			description = "The sound effect to use when receiving a chat-channel broadcast message.",
+			position = 12,
+			section = chatChannelList
+	)
+	default ChatSoundsMode chatChannelBroadcast()
+	{
+		return ChatSoundsMode.OFF;
+	}
+
 	@Range(
 			max = 100
 	)
@@ -146,7 +158,7 @@ public interface ChatSoundsConfig extends Config
 			keyName = "chatChannelVolume",
 			name = "Volume",
 			description = "Sets the volume of the chat message sound effect.",
-			position = 12,
+			position = 13,
 			section = chatChannelList
 	)
 	default int chatChannelVolume()
@@ -158,7 +170,7 @@ public interface ChatSoundsConfig extends Config
 			keyName = "chatChannelIgnoreJoinLeave",
 			name = "Ignore joined/left messages",
 			description = "Do not play a sound for users joining or leaving chats.",
-			position = 13,
+			position = 14,
 			section = chatChannelList
 	)
 	default boolean chatChannelIgnoreJoinLeave()
@@ -170,7 +182,7 @@ public interface ChatSoundsConfig extends Config
 			keyName = "chatChannelIgnorePlayers",
 			name = "Ignore player names",
 			description = "A comma-separated list of player names to never play a sound for.",
-			position = 14,
+			position = 15,
 			section = chatChannelList
 	)
 	default String chatChannelIgnorePlayersList()
@@ -184,7 +196,7 @@ public interface ChatSoundsConfig extends Config
 	@ConfigSection(
 			name = "Clan Chat",
 			description = "Settings for clan chats.",
-			position = 15
+			position = 16
 	)
 	String clanChatList = "clanChatList";
 
@@ -192,7 +204,7 @@ public interface ChatSoundsConfig extends Config
 		keyName = "clanChat",
 		name = "Clan Chat",
 		description = "The sound effect to use when receiving a clan chat message.",
-		position = 16,
+		position = 17,
 		section = clanChatList
 	)
 	default ChatSoundsMode clanChat()
@@ -204,7 +216,7 @@ public interface ChatSoundsConfig extends Config
 		keyName = "clanBroadcast",
 		name = "Clan Broadcast",
 		description = "The sound effect to use when receiving a clan broadcast message.",
-		position = 17,
+		position = 18,
 		section = clanChatList
 	)
 	default ChatSoundsMode clanBroadcast()
@@ -222,7 +234,7 @@ public interface ChatSoundsConfig extends Config
 			keyName = "clanVolume",
 			name = "Volume",
 			description = "Sets the volume of the chat message sound effect.",
-			position = 18,
+			position = 19,
 			section = clanChatList
 	)
 	default int clanVolume()
@@ -234,7 +246,7 @@ public interface ChatSoundsConfig extends Config
 			keyName = "clanIgnoreJoinLeave",
 			name = "Ignore joined/left messages",
 			description = "Do not play a sound for users joining or leaving chats.",
-			position = 19,
+			position = 20,
 			section = clanChatList
 	)
 	default boolean clanIgnoreJoinLeave()
@@ -246,7 +258,7 @@ public interface ChatSoundsConfig extends Config
 			keyName = "clanIgnorePlayers",
 			name = "Ignore player names",
 			description = "A comma-separated list of player names to never play a sound for.",
-			position = 20,
+			position = 21,
 			section = clanChatList
 	)
 	default String clanIgnorePlayersList()
@@ -260,7 +272,7 @@ public interface ChatSoundsConfig extends Config
 	@ConfigSection(
 			name = "Guest Clan Chat",
 			description = "Settings for guest clan chats.",
-			position = 21
+			position = 22
 	)
 	String guestClanList = "guestClanList";
 
@@ -268,7 +280,7 @@ public interface ChatSoundsConfig extends Config
 			keyName = "guestClanChat",
 			name = "Guest Clan Chat",
 			description = "The sound effect to use when receiving a guest clan chat message.",
-			position = 6,
+			position = 23,
 			section = guestClanList
 	)
 	default ChatSoundsMode guestClanChat()
@@ -280,7 +292,7 @@ public interface ChatSoundsConfig extends Config
 			keyName = "guestClanBroadcast",
 			name = "Guest Clan Broadcast",
 			description = "The sound effect to use when receiving a guest clan broadcast message.",
-			position = 22,
+			position = 24,
 			section = guestClanList
 	)
 	default ChatSoundsMode guestClanBroadcast()
@@ -298,7 +310,7 @@ public interface ChatSoundsConfig extends Config
 			keyName = "guestClanChannelVolume",
 			name = "Volume",
 			description = "Sets the volume of the chat message sound effect.",
-			position = 23,
+			position = 25,
 			section = guestClanList
 	)
 	default int guestClanVolume()
@@ -310,7 +322,7 @@ public interface ChatSoundsConfig extends Config
 			keyName = "guestClanIgnoreJoinLeave",
 			name = "Ignore joined/left messages",
 			description = "Do not play a sound for users joining or leaving chats.",
-			position = 24,
+			position = 26,
 			section = guestClanList
 	)
 	default boolean guestClanIgnoreJoinLeave()
@@ -322,7 +334,7 @@ public interface ChatSoundsConfig extends Config
 			keyName = "guestClanIgnorePlayers",
 			name = "Ignore player names",
 			description = "A comma-separated list of player names to never play a sound for.",
-			position = 25,
+			position = 27,
 			section = guestClanList
 	)
 	default String guestClanIgnorePlayersList()
@@ -336,7 +348,7 @@ public interface ChatSoundsConfig extends Config
 	@ConfigSection(
 			name = "Group Ironman Chat",
 			description = "Settings for group ironman chats.",
-			position = 26
+			position = 28
 	)
 	String groupList = "groupList";
 
@@ -344,7 +356,7 @@ public interface ChatSoundsConfig extends Config
 		keyName = "gimChat",
 		name = "Group Ironman Chat",
 		description = "The sound effect to use when receiving a group ironman chat message.",
-		position = 27,
+		position = 29,
 		section = groupList
 	)
 	default ChatSoundsMode gimChat()
@@ -356,7 +368,7 @@ public interface ChatSoundsConfig extends Config
 		keyName = "gimBroadcast",
 		name = "Group Ironman Broadcast",
 		description = "The sound effect to use when receiving a group ironman broadcast message.",
-		position = 28,
+		position = 30,
 		section = groupList
 	)
 	default ChatSoundsMode gimBroadcast()
@@ -374,7 +386,7 @@ public interface ChatSoundsConfig extends Config
 			keyName = "groupIronVolume",
 			name = "Volume",
 			description = "Sets the volume of the chat message sound effect.",
-			position = 29,
+			position = 31,
 			section = groupList
 	)
 	default int groupIronVolume()
@@ -386,7 +398,7 @@ public interface ChatSoundsConfig extends Config
 			keyName = "groupIronIgnorePlayers",
 			name = "Ignore player names",
 			description = "A comma-separated list of player names to never play a sound for.",
-			position = 31,
+			position = 32,
 			section = groupList
 	)
 	default String groupIronIgnorePlayersList()
@@ -400,7 +412,7 @@ public interface ChatSoundsConfig extends Config
 	@ConfigSection(
 			name = "Trade Requests",
 			description = "Settings for trade requests.",
-			position = 32
+			position = 33
 	)
 	String tradeList = "tradeList";
 
@@ -408,7 +420,7 @@ public interface ChatSoundsConfig extends Config
 			keyName = "tradeRequest",
 			name = "Trade Request",
 			description = "The sound effect to use when receiving a trade request.",
-			position = 33,
+			position = 34,
 			section = tradeList
 	)
 	default ChatSoundsMode tradeRequest()
@@ -426,7 +438,7 @@ public interface ChatSoundsConfig extends Config
 			keyName = "tradeVolume",
 			name = "Trade Volume",
 			description = "Sets the volume of the chat message sound effect.",
-			position = 34,
+			position = 35,
 			section = tradeList
 	)
 	default int tradeVolume()
@@ -438,7 +450,7 @@ public interface ChatSoundsConfig extends Config
 			keyName = "tradeIgnorePlayers",
 			name = "Ignore player names",
 			description = "A comma-separated list of player names to never play a sound for.",
-			position = 35,
+			position = 36,
 			section = tradeList
 	)
 	default String tradeIgnorePlayersList()
@@ -452,7 +464,7 @@ public interface ChatSoundsConfig extends Config
 	@ConfigSection(
 			name = "Duel Requests",
 			description = "Settings for duel requests.",
-			position = 36
+			position = 37
 	)
 	String duelList = "duelList";
 
@@ -460,7 +472,7 @@ public interface ChatSoundsConfig extends Config
 			keyName = "duelRequest",
 			name = "Duel Request",
 			description = "The sound effect to use when receiving a duel request.",
-			position = 37,
+			position = 38,
 			section = duelList
 	)
 	default ChatSoundsMode duelRequest()
@@ -478,7 +490,7 @@ public interface ChatSoundsConfig extends Config
 			keyName = "duelVolume",
 			name = "Duel Volume",
 			description = "Sets the volume of the chat message sound effect.",
-			position = 38,
+			position = 39,
 			section = duelList
 	)
 	default int duelVolume()
@@ -490,7 +502,7 @@ public interface ChatSoundsConfig extends Config
 			keyName = "duelIgnorePlayers",
 			name = "Ignore player names",
 			description = "A comma-separated list of player names to never play a sound for.",
-			position = 39,
+			position = 40,
 			section = duelList
 	)
 	default String duelIgnorePlayersList()

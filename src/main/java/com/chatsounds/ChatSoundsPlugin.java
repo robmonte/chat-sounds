@@ -23,6 +23,7 @@ import net.runelite.client.RuneLite;
 import net.runelite.client.audio.AudioPlayer;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.util.Text;
@@ -49,6 +50,7 @@ public class ChatSoundsPlugin extends Plugin
 	private static final File CS_PUBLIC = new File(CS_DIR, "cs_public.wav");
 	private static final File CS_PRIVATE = new File(CS_DIR, "cs_private.wav");
 	private static final File CS_CHAT_CHANNEL = new File(CS_DIR,"cs_chat_channel.wav");
+	private static final File CS_CHAT_CHANNEL_BROADCAST = new File(CS_DIR, "cs_chat_channel_broadcast.wave");
 	private static final File CS_CLAN = new File(CS_DIR, "cs_clan.wav");
 	private static final File CS_CLAN_BROADCAST = new File(CS_DIR, "cs_clan_broadcast.wav");
 	private static final File CS_CLAN_GUEST = new File(CS_DIR, "cs_clan_guest.wav");
@@ -62,6 +64,7 @@ public class ChatSoundsPlugin extends Plugin
 		CS_PUBLIC,
 		CS_PRIVATE,
 		CS_CHAT_CHANNEL,
+		CS_CHAT_CHANNEL_BROADCAST,
 		CS_CLAN,
 		CS_CLAN_BROADCAST,
 		CS_CLAN_GUEST,
@@ -151,7 +154,7 @@ public class ChatSoundsPlugin extends Plugin
 				if (shouldAlertOnJoinOrLeft(msg, config.chatChannelIgnoreJoinLeave()) &&
 						!msg.equals(CS_CHAT_CHANNEL_MSG_1) && !msg.startsWith(CS_CHAT_CHANNEL_MSG_2) &&
 						!msg.equals(CS_CHAT_CHANNEL_MSG_3)) {
-					playSound(config.chatChannel(), CS_CHAT_CHANNEL, config.chatChannelVolume());
+					playSound(config.chatChannelBroadcast(), CS_CHAT_CHANNEL_BROADCAST, config.chatChannelVolume());
 				}
 				break;
 
@@ -209,6 +212,15 @@ public class ChatSoundsPlugin extends Plugin
 				}
 				playSound(config.duelRequest(), CS_DUEL_REQUEST, config.duelVolume());
 				break;
+		}
+	}
+
+	@Subscribe
+	public void onConfigChanged(ConfigChanged configChanged)
+	{
+		if (configChanged.getGroup().equals("chatSounds"))
+		{
+			updateLists();
 		}
 	}
 
