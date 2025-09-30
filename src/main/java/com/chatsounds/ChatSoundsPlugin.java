@@ -42,7 +42,7 @@ public class ChatSoundsPlugin extends Plugin
 	private static final String CS_CLAN_MSG = "To talk in your clan's channel, start each line of chat with // or /c.".toLowerCase();
 	private static final String CS_CLAN_GUEST_MSG_1 = "You are now a guest of ".toLowerCase();
 	private static final String CS_CLAN_GUEST_MSG_2 = "To talk, start each line of chat with /// or /gc.".toLowerCase();
-	private static final String CS_CLAN_GUEST_MSG_3 = "Attempting to reconnect to guest channel automatically...";
+	private static final String CS_CLAN_GUEST_MSG_3 = "Attempting to reconnect to guest channel automatically...".toLowerCase();
 	private static final String CS_GIM_MSG = "To talk in your Ironman Group's channel, start each line of chat with //// or /g.".toLowerCase();
 
 	private static final File CS_DIR = new File(RuneLite.RUNELITE_DIR.getPath() + File.separator + "chat-sounds");
@@ -76,6 +76,7 @@ public class ChatSoundsPlugin extends Plugin
 	};
 
 	private final AudioPlayer audioPlayer = new AudioPlayer();
+	private List<String> allIgnored = new CopyOnWriteArrayList<>();
 	private List<String> publicIgnored = new CopyOnWriteArrayList<>();
 	private List<String> privateIgnored = new CopyOnWriteArrayList<>();
 	private List<String> chatChannelIgnored = new CopyOnWriteArrayList<>();
@@ -118,12 +119,20 @@ public class ChatSoundsPlugin extends Plugin
 		Player player = client.getLocalPlayer();
 		String playerName = player.getName() != null ? player.getName() : "";
 		String cleanName = Text.sanitize(chatMessage.getName());
+
+		// Turn off sounds for yourself or when not logged in.
 		if (player == null ||
 				client.getGameState() != GameState.LOGGED_IN ||
 				cleanName.equalsIgnoreCase(Text.sanitize(playerName))) {
 			return;
 		}
 
+		// Turn off sounds for global settings.
+		if (shouldIgnorePlayer(allIgnored, cleanName) || config.allChats() == GlobalSoundsMode.OFF) {
+			return;
+		}
+
+		// Check for the various chat types in the game.
 		ChatMessageType type = chatMessage.getType();
 		String msg = Text.standardize(chatMessage.getMessage());
 		switch (type) {
@@ -293,6 +302,7 @@ public class ChatSoundsPlugin extends Plugin
 
 	private void updateLists()
 	{
+		allIgnored = Text.fromCSV(config.allChatsIgnorePlayersList());
 		publicIgnored = Text.fromCSV(config.publicIgnorePlayersList());
 		privateIgnored = Text.fromCSV(config.privateIgnorePlayersList());
 		chatChannelIgnored = Text.fromCSV(config.chatChannelIgnorePlayersList());
