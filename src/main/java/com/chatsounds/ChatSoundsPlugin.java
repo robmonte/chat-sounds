@@ -225,8 +225,8 @@ public class ChatSoundsPlugin extends Plugin
 	}
 
 	// Returns true if the message is from an ignored player in the chat's type.
-	private boolean shouldIgnorePlayer(List<String> ignoreList, String eventName) {
-        return ignoreList.contains(eventName.toLowerCase());
+	private boolean shouldIgnorePlayer(List<String> ignoreList, String name) {
+        return ignoreList.contains(name.toLowerCase());
     }
 
 	// Returns false if it is not a "join" or "left" message. If it is one, returns true if ignore is
